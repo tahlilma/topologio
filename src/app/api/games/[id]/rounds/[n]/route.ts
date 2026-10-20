@@ -3,6 +3,7 @@ import { handle, readJson } from '@/lib/server/http';
 import { requirePlayer } from '@/lib/server/auth';
 import { startRound, submitGuess, useHint } from '@/lib/server/games';
 import { MAP_SIZE } from '@/lib/game/constants';
+import { limit } from '@/lib/server/ratelimit';
 
 const Guess = z.object({
   x: z.number().finite().min(0).max(MAP_SIZE),
@@ -21,6 +22,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string; n:
     const { id, n } = await ctx.params;
     const round = Number(n);
     const p = await requirePlayer();
+    limit(`round:${p.id}`, 120, 60_000);
     const body = Body.parse(await readJson(req));
     if (body.action === 'start') return startRound(p, id, round);
     if (body.action === 'hint') return { hints: await useHint(p, id, round, body.hint) };

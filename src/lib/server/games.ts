@@ -32,6 +32,7 @@ export interface RoundResult {
 
 export interface RoundView {
   n: number;
+  /** 0 when the viewer may not see answers yet. */
   seed: number;
   name: string | null;
   started: boolean;
@@ -193,7 +194,8 @@ export async function getGameView(id: string, viewer: Player | null): Promise<Ga
       name = info.name;
     }
     roundViews.push({
-      n: r.n, seed: r.seed, name, started: r.startedAt != null, startedAt: r.startedAt, submitted,
+      // The seed determines the answer, so it is withheld whenever answers are.
+      n: r.n, seed: reveal ? r.seed : 0, name, started: r.startedAt != null, startedAt: r.startedAt, submitted,
       score: submitted ? r.score ?? 0 : null, result,
     });
   }

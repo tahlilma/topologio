@@ -3,9 +3,11 @@ import { z } from 'zod';
 import { handle, readJson } from '@/lib/server/http';
 import { currentPlayer, requirePlayer } from '@/lib/server/auth';
 import { joinRoom, leaveRoom, pollRoom, setRoomDifficulty, skipReveal, startRace, warmRace } from '@/lib/server/rooms';
+import { clientIp, limit } from '@/lib/server/ratelimit';
 
 export async function GET(_req: Request, ctx: { params: Promise<{ code: string }> }) {
   return handle(async () => {
+    limit(`room-poll:${await clientIp()}`, 400, 60_000);
     const { code } = await ctx.params;
     return pollRoom(await currentPlayer(), code);
   });
@@ -20,6 +22,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
   return handle(async () => {
     const { code } = await ctx.params;
     const p = await requirePlayer();
+    limit(`room-action:${p.id}`, 60, 60_000);
     const body = Body.parse(await readJson(req));
     switch (body.action) {
       case 'join':
